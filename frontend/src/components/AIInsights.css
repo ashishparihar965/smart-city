@@ -1,0 +1,234 @@
+/* ═══════════════════════════════════════
+   AI INSIGHTS PANEL — Premium Design
+   ═══════════════════════════════════════ */
+
+.ai-insights-panel {
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.ai-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.ai-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ai-header-icon {
+  width: 42px; height: 42px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.2));
+  border-radius: 12px;
+  color: #a78bfa;
+}
+
+.ai-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ai-header p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.ai-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.ai-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.ai-card:hover {
+  border-color: rgba(139,92,246,0.2);
+  box-shadow: 0 4px 20px rgba(139,92,246,0.08);
+}
+
+.ai-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ai-card-body {
+  padding: 1.25rem;
+}
+
+/* Spike Card */
+.spike-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.spike-high {
+  background: rgba(239,68,68,0.1);
+  color: #ef4444;
+}
+
+.spike-medium {
+  background: rgba(245,158,11,0.1);
+  color: #f59e0b;
+}
+
+.spike-low {
+  background: rgba(16,185,129,0.1);
+  color: #10b981;
+}
+
+.ai-spike-card.spike-high {
+  border-color: rgba(239,68,68,0.2);
+}
+
+.ai-insight-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Operator Load */
+.operator-load-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.op-load-item {
+  display: grid;
+  grid-template-columns: 100px 1fr 80px;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.op-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-load-bar-wrap {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.op-load-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
+.op-resolved {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.ai-warning-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(239,68,68,0.08);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #ef4444;
+}
+
+.ai-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Anomalies */
+.anomaly-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.anomaly-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+}
+
+.anomaly-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.anomaly-critical { background: rgba(239,68,68,0.06); }
+.anomaly-critical .anomaly-dot { background: #ef4444; animation: pulse-badge 1.5s infinite; }
+
+.anomaly-warning { background: rgba(245,158,11,0.06); }
+.anomaly-warning .anomaly-dot { background: #f59e0b; }
+
+.anomaly-normal { background: rgba(16,185,129,0.06); }
+.anomaly-normal .anomaly-dot { background: #10b981; }
+
+/* Recommendations */
+.recommendation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.55rem 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.recommendation-item:last-child {
+  border-bottom: none;
+}
+
+.recommendation-item svg {
+  flex-shrink: 0;
+  color: #8b5cf6;
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .ai-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,171 @@
+/* ───────────────── Citizen Bins / Dustbins ───────────────── */
+
+.citizen-bins-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── User Location Pulse ── */
+.user-location-pulse {
+  animation: locationPulse 2s ease-in-out infinite;
+}
+@keyframes locationPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.citizen-bins-map-wrapper {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.citizen-bins-map-wrapper .leaflet-container {
+  height: calc(100vh - 210px);
+  min-height: 400px;
+  width: 100%;
+  z-index: 1;
+}
+
+/* ── Info Card (floating on map) ── */
+.citizen-bin-info {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  min-width: 280px;
+  max-width: 340px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.citizen-bin-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.citizen-bin-info-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.citizen-bin-info-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.citizen-bin-info-close:hover {
+  color: var(--text-primary);
+}
+
+.citizen-bin-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+
+.citizen-bin-info-row:last-of-type {
+  border-bottom: none;
+}
+
+.citizen-bin-info-row .label {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.citizen-bin-info-row .value {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.citizen-bin-directions-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.citizen-bin-directions-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+}
+
+/* ── Legend ── */
+.citizen-bins-legend {
+  display: flex;
+  gap: 1.25rem;
+  padding: 0.65rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.legend-dot-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-dot-sm {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .citizen-bins-map-wrapper .leaflet-container {
+    height: 400px;
+  }
+
+  .citizen-bin-info {
+    min-width: 240px;
+    max-width: 90vw;
+    left: 10px;
+    bottom: 10px;
+  }
+}

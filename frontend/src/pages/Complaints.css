@@ -1,0 +1,276 @@
+/* Complaint Cards */
+.complaint-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  transition: var(--transition);
+  position: relative;
+}
+
+.complaint-card:hover {
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.priority-border-high { border-left: 3px solid #ef4444; }
+.priority-border-medium { border-left: 3px solid #f59e0b; }
+.priority-border-low { border-left: 3px solid #10b981; }
+
+.overdue-card {
+  background: rgba(239, 68, 68, 0.04) !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+.complaint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.complaint-header h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.complaint-status-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.complaint-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.complaint-image-wrap {
+  margin: 0.6rem 0 0.7rem;
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: 190px;
+  position: relative;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+}
+
+.complaint-image {
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  max-height: 190px;
+  object-fit: cover;
+  display: block;
+}
+
+.complaint-image-chip {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+}
+
+.upload-input-wrap {
+  border: 1px dashed var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem;
+  background: var(--bg-surface);
+}
+
+.upload-file-name {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.upload-preview-wrap {
+  margin-top: 0.6rem;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 180px;
+}
+
+.upload-preview-image {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+.field-error {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.complaint-create-modal {
+  width: min(640px, calc(100vw - 1rem));
+  max-width: min(640px, calc(100vw - 1rem));
+  max-height: calc(100dvh - 1rem);
+  margin: 0;
+}
+
+.complaint-create-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.complaint-form-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.complaint-coordinate-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Remarks */
+.remarks-section {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.remarks-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.remark-item {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.remark-item strong {
+  color: var(--text-primary);
+}
+
+.remark-time {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+/* Smart Suggestions */
+.suggestions-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.suggestions-title {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.suggestion-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  margin-bottom: 0.3rem;
+  transition: var(--transition);
+}
+
+.suggestion-item:hover {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.suggestion-item.selected {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 2px var(--accent-blue-glow);
+}
+
+.suggestion-item strong {
+  color: var(--accent-blue);
+}
+
+/* Charts Grid for complaints */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+/* Grid-5 */
+.grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .charts-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-5 { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .charts-grid { grid-template-columns: 1fr; }
+  .grid-5 { grid-template-columns: repeat(2, 1fr); }
+
+  .complaint-create-modal {
+    width: calc(100vw - 0.75rem);
+    max-width: calc(100vw - 0.75rem);
+    max-height: calc(100dvh - 0.75rem);
+    padding: 1rem;
+  }
+
+  .complaint-form-two-col {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}

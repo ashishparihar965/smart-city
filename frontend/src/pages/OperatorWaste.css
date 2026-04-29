@@ -1,0 +1,123 @@
+/* ───────────────── Operator Waste Dashboard ───────────────── */
+
+.operator-waste-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Mini Map ── */
+.operator-waste-map {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+.operator-waste-map .leaflet-container {
+  height: 280px;
+  width: 100%;
+  z-index: 1;
+}
+
+/* ── Queue Stats ── */
+.operator-waste-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+.ow-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  text-align: center;
+  transition: transform 0.18s;
+}
+.ow-stat-card:hover { transform: translateY(-2px); }
+.ow-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.ow-stat-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Collection Queue Table ── */
+.operator-waste-table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  overflow: auto;
+}
+.operator-waste-table-wrap .data-table {
+  width: 100%;
+}
+
+.ow-fill-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ow-fill-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-input, rgba(255,255,255,0.06));
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 60px;
+}
+.ow-fill-bar-inner {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.ow-fill-pct {
+  font-weight: 700;
+  font-size: 0.85rem;
+  min-width: 36px;
+  text-align: right;
+}
+
+.ow-collect-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.ow-collect-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
+}
+.ow-collect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.ow-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
+.ow-empty-state svg {
+  margin-bottom: 0.5rem;
+  opacity: 0.4;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .operator-waste-stats { grid-template-columns: 1fr; }
+  .operator-waste-map .leaflet-container { height: 200px; }
+}

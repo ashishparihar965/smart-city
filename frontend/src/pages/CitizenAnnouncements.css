@@ -1,0 +1,129 @@
+.citizen-announcements-page {
+  max-width: 1000px;
+}
+
+.announcements-count {
+  margin-bottom: 1.5rem;
+}
+
+.announcements-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.announcements-grid > div {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.announcements-grid > div:hover {
+  transform: translateX(4px);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-secondary);
+}
+
+.empty-state svg {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+}
+
+.empty-state p {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+}
+
+.empty-state-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.priority-legend {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.priority-legend h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.legend-items {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+}
+
+.priority-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priority-dot.critical {
+  background: #8B0000;
+}
+
+.priority-dot.high {
+  background: #F44336;
+}
+
+.priority-dot.medium {
+  background: #FF9800;
+}
+
+.priority-dot.low {
+  background: #4CAF50;
+}
+
+.legend-item span:last-child {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .announcements-count {
+    margin-bottom: 1rem;
+  }
+
+  .legend-items {
+    grid-template-columns: 1fr;
+  }
+
+  .empty-state {
+    padding: 2rem 1.5rem;
+  }
+}

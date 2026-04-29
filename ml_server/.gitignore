@@ -1,0 +1,7 @@
+venv
+yolov8n.pt
+number_plate_model.pt
+runs
+License-Plate-Data
+__pycache__
+*.pt

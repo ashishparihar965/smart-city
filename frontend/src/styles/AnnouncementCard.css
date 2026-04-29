@@ -1,0 +1,162 @@
+.announcement-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-left: 5px solid #FF9800;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.announcement-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.announcement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.announcement-title-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.announcement-type-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.announcement-type-icon.traffic {
+  color: #FF6B6B;
+}
+
+.announcement-type-icon.water {
+  color: #4DA6FF;
+}
+
+.announcement-type-icon.waste {
+  color: #8B7355;
+}
+
+.announcement-type-icon.lighting {
+  color: #FFD700;
+}
+
+.announcement-type-icon.emergency {
+  color: #C41C3B;
+}
+
+.announcement-type-icon.general {
+  color: #666;
+}
+
+.announcement-type-icon.maintenance {
+  color: #7C3AED;
+}
+
+.announcement-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.announcement-priority-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.announcement-message {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.announcement-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.announcement-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.announcement-meta-item svg {
+  color: #999;
+  flex-shrink: 0;
+}
+
+.announcement-expiry {
+  font-size: 12px;
+  color: #F44336;
+  padding: 4px 8px;
+  background: #FFE0E0;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+.announcement-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #999;
+}
+
+.announcement-views {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .announcement-card {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .announcement-title {
+    font-size: 14px;
+  }
+
+  .announcement-message {
+    font-size: 13px;
+  }
+
+  .announcement-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .announcement-priority-badge {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+}

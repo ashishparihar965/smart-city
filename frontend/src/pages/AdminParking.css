@@ -1,0 +1,330 @@
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN PARKING — Dashboard, Location Mgmt, Slot Mgmt
+   ═══════════════════════════════════════════════════════════════ */
+
+.admin-parking {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-parking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-parking-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Stats Grid ───────────────────────────────────────────────── */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-stat-card {
+  background: var(--card-bg, rgba(30, 30, 40, 0.7));
+  border: 1px solid var(--border, rgba(255,255,255,0.06));
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.admin-stat-card.blue::after { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.admin-stat-card.green::after { background: linear-gradient(90deg, #22c55e, #4ade80); }
+.admin-stat-card.yellow::after { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.admin-stat-card.red::after { background: linear-gradient(90deg, #ef4444, #f87171); }
+.admin-stat-card.purple::after { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.admin-stat-card.cyan::after { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
+
+.admin-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+}
+
+/* ── Admin Tabs ───────────────────────────────────────────────── */
+.admin-parking-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--card-bg, rgba(30, 30, 40, 0.7));
+  border-radius: 12px;
+  padding: 4px;
+  border: 1px solid var(--border, rgba(255,255,255,0.06));
+  margin-bottom: 1.5rem;
+  width: fit-content;
+}
+
+.admin-parking-tab {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #999);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.admin-parking-tab:hover {
+  color: var(--text-primary, #fff);
+  background: rgba(255,255,255,0.05);
+}
+
+.admin-parking-tab.active {
+  background: var(--accent, #60a5fa);
+  color: #fff;
+}
+
+/* ── Location List ────────────────────────────────────────────── */
+.admin-locations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-location-row {
+  background: var(--card-bg, rgba(30, 30, 40, 0.7));
+  border: 1px solid var(--border, rgba(255,255,255,0.06));
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.admin-location-row:hover {
+  border-color: rgba(96,165,250,0.3);
+}
+
+.admin-location-row.inactive {
+  opacity: 0.5;
+}
+
+.admin-loc-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.admin-loc-info h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+
+.admin-loc-info p {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #888);
+  margin: 0;
+}
+
+.admin-loc-stats {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-loc-stat {
+  text-align: center;
+  min-width: 60px;
+}
+
+.admin-loc-stat .stat-num {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.admin-loc-stat .stat-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary, #888);
+  text-transform: uppercase;
+}
+
+.admin-loc-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* ── Slots Table ──────────────────────────────────────────────── */
+.admin-slots-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border, rgba(255,255,255,0.06));
+}
+
+.admin-slots-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.admin-slots-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #888);
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.06));
+}
+
+.admin-slots-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  color: var(--text-primary, #fff);
+}
+
+.admin-slots-table tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+.slot-status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.slot-status-dot.available { background: rgba(34,197,94,0.15); color: #4ade80; }
+.slot-status-dot.reserved { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.slot-status-dot.occupied { background: rgba(239,68,68,0.15); color: #f87171; }
+
+/* ── Add Form ─────────────────────────────────────────────────── */
+.admin-add-form {
+  background: var(--card-bg, rgba(30, 30, 40, 0.7));
+  border: 1px solid var(--border, rgba(255,255,255,0.06));
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-add-form h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-form-grid .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-form-grid .form-group label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary, #aaa);
+}
+
+.admin-form-grid .form-group input,
+.admin-form-grid .form-group select {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+}
+
+.admin-form-grid .form-group input:focus,
+.admin-form-grid .form-group select:focus {
+  outline: none;
+  border-color: var(--accent, #60a5fa);
+}
+
+.admin-form-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* ── Bookings Table ───────────────────────────────────────────── */
+.admin-bookings-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border, rgba(255,255,255,0.06));
+}
+
+.admin-bookings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+
+.admin-bookings-table th {
+  padding: 0.75rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #888);
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.06));
+  white-space: nowrap;
+}
+
+.admin-bookings-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  color: var(--text-primary, #fff);
+}
+
+@media (max-width: 768px) {
+  .admin-parking { padding: 1rem; }
+  .admin-stats-grid { grid-template-columns: 1fr 1fr; }
+  .admin-form-grid { grid-template-columns: 1fr; }
+  .admin-parking-tabs { width: 100%; overflow-x: auto; }
+}
