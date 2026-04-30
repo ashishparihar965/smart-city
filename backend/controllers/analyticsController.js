@@ -1,5 +1,5 @@
 const Complaint = require('../models/Complaint')
-const TrafficData = require('../models/TrafficData')
+const trafficService = require('../services/trafficService')
 const Bin = require('../models/Bin')
 const WaterData = require('../models/WaterData')
 const LightingData = require('../models/LightingData')
@@ -74,10 +74,11 @@ const analyticsController = {
   // GET /api/analytics/modules — Module-level statistics
   async moduleStats(req, res, next) {
     try {
+      const trafficSummary = await trafficService.getTrafficSummary()
       const traffic = {
-        total: await TrafficData.countDocuments(),
-        highCongestion: await TrafficData.countDocuments({ congestionLevel: 'high' }),
-        incidents: await TrafficData.countDocuments({ incidentReported: true }),
+        total: trafficSummary.totalSignals,
+        highCongestion: trafficSummary.highDensity,
+        incidents: 0,
       }
 
       const waste = {

@@ -86,16 +86,17 @@ export const dashboardAPI = {
   predict: () => api.post('/dashboard/predict'),
 }
 
-// Traffic API
+// Smart Traffic API (New direction-group based system)
 export const trafficAPI = {
-  getAll: (params) => api.get('/traffic', { params }),
-  getStats: () => api.get('/traffic/stats'),
-  create: (data) => api.post('/traffic', data),
-  update: (id, data) => api.put(`/traffic/${id}`, data),
-  reportIncident: (id, data) => api.post(`/traffic/${id}/report-incident`, data),
-  emergencyOverride: (id) => api.post(`/traffic/${id}/emergency-override`),
-  clearOverride: (id) => api.post(`/traffic/${id}/clear-override`),
-  predict: (zone) => api.get(`/traffic/predict/${zone}`),
+  getAll: () => api.get('/traffic/all'),
+  register: (data) => api.post('/traffic/register', data),
+  manualControl: (data) => api.post('/traffic/manual-control', data),
+  simulate: (formData) => api.post('/traffic/simulate', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000
+  }),
+  getCongestion: () => api.get('/traffic/congestion'),
+  deleteSignal: (id) => api.delete(`/traffic/${id}`),
 }
 
 // Bins API (new waste management)
@@ -212,6 +213,7 @@ export const iotAPI = {
   heartbeatDevice: (deviceId, data) => api.post(`/iot/devices/${deviceId}/heartbeat`, data),
   disconnectDevice: (deviceId, data) => api.post(`/iot/devices/${deviceId}/disconnect`, data),
   sendTelemetry: (deviceId, data) => api.post(`/iot/devices/${deviceId}/telemetry`, data),
+  deleteDevice: (deviceId) => api.delete(`/iot/devices/${deviceId}`),
 }
 
 // Emergency API (NEW)

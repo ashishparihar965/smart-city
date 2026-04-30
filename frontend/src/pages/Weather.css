@@ -183,6 +183,14 @@
   color: var(--text-muted);
   opacity: 0.6;
 }
+.wzc-zone-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  opacity: 0.5;
+  padding-top: 2px;
+  text-transform: capitalize;
+}
 
 /* ── Charts Section ── */
 .weather-charts-section {

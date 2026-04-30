@@ -9,7 +9,8 @@ import Layout from './components/Layout/Layout'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
-import Traffic from './pages/Traffic'
+import AdminTraffic from './pages/AdminTraffic'
+import CitizenTraffic from './pages/CitizenTraffic'
 import AdminWaste from './pages/AdminWaste'
 import CitizenBins from './pages/CitizenBins'
 import OperatorWaste from './pages/OperatorWaste'
@@ -90,7 +91,7 @@ const AppRoutes = () => {
           path="traffic"
           element={
             <ProtectedRoute roles={['admin', 'operator']}>
-              <Traffic />
+              <AdminTraffic />
             </ProtectedRoute>
           }
         />
@@ -210,6 +211,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute roles={['user']}>
               <CitizenBins />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="smart-traffic"
+          element={
+            <ProtectedRoute roles={['user']}>
+              <CitizenTraffic />
             </ProtectedRoute>
           }
         />

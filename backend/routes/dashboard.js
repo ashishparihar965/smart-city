@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const predictionService = require('../services/predictionService');
 const { getCityHealthData } = require('../services/cityHealthService');
-const TrafficData = require('../models/TrafficData');
+const TrafficSignal = require('../models/TrafficSignal');
+const TrafficSimulation = require('../models/TrafficSimulation');
+const trafficService = require('../services/trafficService');
 const Bin = require('../models/Bin');
 const WaterData = require('../models/WaterData');
 const LightingData = require('../models/LightingData');
@@ -185,14 +187,8 @@ router.get('/', auth, async (req, res, next) => {
     // City Health Score
     const healthData = await predictionService.calculateCityHealthScore();
 
-    // Traffic Summary
-    const trafficSummary = {
-      totalLocations: await TrafficData.countDocuments(),
-      highCongestion: await TrafficData.countDocuments({ congestionLevel: 'high' }),
-      mediumCongestion: await TrafficData.countDocuments({ congestionLevel: 'medium' }),
-      lowCongestion: await TrafficData.countDocuments({ congestionLevel: 'low' }),
-      activeIncidents: await TrafficData.countDocuments({ incidentReported: true })
-    };
+    // Traffic Summary (new Smart Traffic system)
+    const trafficSummary = await trafficService.getTrafficSummary();
 
     // Waste Summary (new Bin model)
     const wasteSummary = {

@@ -1,4 +1,4 @@
-const TrafficData = require('../models/TrafficData');
+const trafficService = require('./trafficService');
 const Bin = require('../models/Bin');
 const WaterData = require('../models/WaterData');
 const LightingData = require('../models/LightingData');
@@ -16,10 +16,8 @@ const predictionService = {
       let score = 100;
       const factors = {};
 
-      // Traffic factor (max -25 points)
-      const totalTraffic = await TrafficData.countDocuments();
-      const highTraffic = await TrafficData.countDocuments({ congestionLevel: 'high' });
-      const trafficRatio = totalTraffic > 0 ? highTraffic / totalTraffic : 0;
+      // Traffic factor (max -25 points) — uses new Smart Traffic system
+      const trafficRatio = await trafficService.getCongestionRatio();
       const trafficPenalty = Math.round(trafficRatio * 25);
       score -= trafficPenalty;
       factors.traffic = { score: 100 - Math.round(trafficRatio * 100), penalty: trafficPenalty };

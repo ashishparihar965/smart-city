@@ -12,12 +12,13 @@ import {
 } from 'recharts';
 import './Weather.css';
 
-const ZONE_COLORS = {
-  'Zone A': '#3b82f6',
-  'Zone B': '#10b981',
-  'Zone C': '#f59e0b',
-  'Zone D': '#a855f7',
-};
+// Dynamic zone colors — auto-assigned to whatever zones exist
+const ZONE_PALETTE = [
+  '#3b82f6', '#10b981', '#f59e0b', '#a855f7',
+  '#ef4444', '#06b6d4', '#ec4899', '#84cc16',
+];
+
+const getZoneColor = (zone, index) => ZONE_PALETTE[index % ZONE_PALETTE.length];
 
 const getAqiInfo = (aqi) => {
   if (aqi <= 50) return { label: 'Good', color: '#10b981', bg: 'rgba(16,185,129,0.15)' };
@@ -74,24 +75,31 @@ const Weather = () => {
     };
   }, []);
 
-  // Build chart data from history
+  // Build device color map dynamically (keyed by esp32_id)
+  const zoneKeys = Object.keys(history);
+  const zoneColorMap = {};
+  zoneKeys.forEach((z, i) => { zoneColorMap[z] = getZoneColor(z, i); });
+  // Also add colors for live device data
+  zones.forEach((z, i) => {
+    const key = z.esp32_id || z.zone;
+    if (!zoneColorMap[key]) zoneColorMap[key] = getZoneColor(key, Object.keys(zoneColorMap).length);
+  });
+
+  // Build chart data from history — works with any zone names
   const buildChartData = (field) => {
-    const zoneKeys = Object.keys(history);
     if (zoneKeys.length === 0) return [];
 
-    // Merge all zones by time intervals
     const allTimes = new Set();
     zoneKeys.forEach(z => {
       (history[z] || []).forEach(r => {
         const t = new Date(r.time);
-        const key = `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}`;
+        const key = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
         allTimes.add(key);
       });
     });
 
     const sortedTimes = [...allTimes].sort();
-    // Take every Nth to avoid too many points
-    const step = Math.max(1, Math.floor(sortedTimes.length / 30));
+    const step = Math.max(1, Math.floor(sortedTimes.length / 40));
     const sampledTimes = sortedTimes.filter((_, i) => i % step === 0);
 
     return sampledTimes.map(timeKey => {
@@ -100,7 +108,7 @@ const Weather = () => {
         const readings = history[z] || [];
         const match = readings.find(r => {
           const t = new Date(r.time);
-          return `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}` === timeKey;
+          return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}` === timeKey;
         });
         point[z] = match ? match[field] : null;
       });
@@ -126,7 +134,7 @@ const Weather = () => {
       <div className="page-header">
         <div>
           <h1><CloudSun size={22} style={{ display: 'inline', marginRight: 8 }} />Weather Monitoring</h1>
-          <p>Real-time zone weather, city forecast, and environmental alerts</p>
+          <p>Real-time ESP32 sensor data, city forecast, and environmental alerts</p>
         </div>
         <div className="header-actions">
           <button className="btn btn-outline" onClick={fetchAll}>
@@ -170,19 +178,21 @@ const Weather = () => {
         </div>
       )}
 
-      {/* ═══ Zone Weather Cards ═══ */}
+      {/* ═══ ESP32 Live Sensor Cards ═══ */}
       <div>
         <div className="weather-zones-header">
-          <h2><Thermometer size={18} /> Zone Weather (ESP32 Sensors)</h2>
+          <h2><Thermometer size={18} /> ESP32 Live Sensors ({zones.length} active)</h2>
         </div>
         <div className="weather-zone-grid">
-          {zones.map(z => {
+          {zones.map((z, i) => {
             const aqiInfo = getAqiInfo(z.aqi);
+            const deviceKey = z.esp32_id || z.zone;
+            const color = zoneColorMap[deviceKey] || ZONE_PALETTE[i % ZONE_PALETTE.length];
             return (
-              <div key={z.zone} className="weather-zone-card">
+              <div key={deviceKey} className="weather-zone-card">
                 <div className="wzc-header">
-                  <span className="wzc-zone-name" style={{ borderLeft: `3px solid ${ZONE_COLORS[z.zone] || '#666'}`, paddingLeft: 8 }}>
-                    {z.zone}
+                  <span className="wzc-zone-name" style={{ borderLeft: `3px solid ${color}`, paddingLeft: 8 }}>
+                    📡 {z.esp32_id}
                   </span>
                   <span className="wzc-daynight">{z.is_daytime ? '☀️' : '🌙'}</span>
                 </div>
@@ -205,22 +215,27 @@ const Weather = () => {
                     {z.timestamp ? new Date(z.timestamp).toLocaleTimeString() : '—'}
                   </span>
                 </div>
+                {z.zone && (
+                  <div className="wzc-zone-tag">
+                    Zone: {z.zone}
+                  </div>
+                )}
               </div>
             );
           })}
           {zones.length === 0 && (
             <div className="no-alerts">
               <Thermometer size={32} />
-              <p>No zone data yet. Waiting for ESP32 readings...</p>
+              <p>No ESP32 data yet. Register a device and start sending sensor data.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* ═══ Charts ═══ */}
+      {/* ═══ Charts — show whatever zones have history ═══ */}
       {tempChartData.length > 0 && (
         <div>
-          <h2 className="weather-section-title"><Activity size={18} /> Live Charts (Last 24h)</h2>
+          <h2 className="weather-section-title"><Activity size={18} /> ESP32 Sensor History (Last 24h)</h2>
           <div className="weather-charts-section">
             {/* Temperature Chart */}
             <div className="weather-chart-card">
@@ -232,12 +247,13 @@ const Weather = () => {
                   <YAxis tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b' }} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
-                  {Object.keys(history).map(zone => (
+                  {zoneKeys.map((zone, i) => (
                     <Line
                       key={zone}
                       type="monotone"
                       dataKey={zone}
-                      stroke={ZONE_COLORS[zone] || '#888'}
+                      name={zone}
+                      stroke={zoneColorMap[zone] || ZONE_PALETTE[i]}
                       strokeWidth={2}
                       dot={false}
                       connectNulls
@@ -257,12 +273,13 @@ const Weather = () => {
                   <YAxis tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b' }} domain={[0, 100]} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
-                  {Object.keys(history).map(zone => (
+                  {zoneKeys.map((zone, i) => (
                     <Line
                       key={zone}
                       type="monotone"
                       dataKey={zone}
-                      stroke={ZONE_COLORS[zone] || '#888'}
+                      name={zone}
+                      stroke={zoneColorMap[zone] || ZONE_PALETTE[i]}
                       strokeWidth={2}
                       dot={false}
                       connectNulls
@@ -282,12 +299,13 @@ const Weather = () => {
                   <YAxis tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b' }} domain={[0, 300]} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
-                  {Object.keys(history).map(zone => (
+                  {zoneKeys.map((zone, i) => (
                     <Line
                       key={zone}
                       type="monotone"
                       dataKey={zone}
-                      stroke={ZONE_COLORS[zone] || '#888'}
+                      name={zone}
+                      stroke={zoneColorMap[zone] || ZONE_PALETTE[i]}
                       strokeWidth={2}
                       dot={false}
                       connectNulls
@@ -325,7 +343,7 @@ const Weather = () => {
           <div className="no-alerts">
             <CheckCircle size={36} />
             <h3>All Clear</h3>
-            <p>No weather alerts at this time. Conditions are normal across all zones.</p>
+            <p>No weather alerts at this time. Conditions are normal.</p>
           </div>
         )}
       </div>

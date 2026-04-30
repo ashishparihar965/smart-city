@@ -1,87 +1,70 @@
-const TrafficData = require('../models/TrafficData');
+const TrafficSignal = require('../models/TrafficSignal');
+const TrafficSimulation = require('../models/TrafficSimulation');
 const notificationService = require('./notificationService');
 
 const trafficService = {
   /**
-   * Predict congestion based on historical data patterns
+   * Get traffic summary for dashboard
    */
-  async predictCongestion(zone) {
+  async getTrafficSummary() {
     try {
-      // Get last 20 readings for the zone
-      const recentData = await TrafficData.find({ zone })
-        .sort({ createdAt: -1 })
-        .limit(20);
+      const totalSignals = await TrafficSignal.countDocuments();
+      const signals = await TrafficSignal.find();
 
-      if (recentData.length < 3) return 'unknown';
+      // Get latest simulation for each signal
+      let highDensity = 0;
+      let mediumDensity = 0;
+      let lowDensity = 0;
 
-      // Count congestion levels in recent history
-      const counts = { low: 0, medium: 0, high: 0 };
-      recentData.forEach(d => { counts[d.congestionLevel]++; });
-
-      // Simple trend analysis: if high congestion is increasing, predict high
-      const recentThree = recentData.slice(0, 3);
-      const highRecent = recentThree.filter(d => d.congestionLevel === 'high').length;
-      
-      if (highRecent >= 2) {
-        await notificationService.createPredictionAlert(
-          'traffic',
-          `High Traffic Predicted - ${zone.toUpperCase()} Zone`,
-          `Based on recent trends, high congestion is predicted in ${zone} zone. Consider deploying traffic management measures.`
-        );
-        return 'high';
+      for (const signal of signals) {
+        const latest = await TrafficSimulation.findOne({ signalId: signal._id })
+          .sort({ createdAt: -1 });
+        if (latest) {
+          if (latest.density === 'high') highDensity++;
+          else if (latest.density === 'medium') mediumDensity++;
+          else lowDensity++;
+        }
       }
 
-      if (counts.medium > counts.low && counts.medium > counts.high) return 'medium';
-      if (counts.high > counts.low) return 'high';
-      return 'low';
+      return {
+        totalSignals,
+        highDensity,
+        mediumDensity,
+        lowDensity,
+        activeSignals: totalSignals
+      };
     } catch (error) {
-      console.error('Traffic prediction error:', error.message);
-      return 'unknown';
+      console.error('Traffic summary error:', error.message);
+      return {
+        totalSignals: 0,
+        highDensity: 0,
+        mediumDensity: 0,
+        lowDensity: 0,
+        activeSignals: 0
+      };
     }
   },
 
   /**
-   * Handle emergency vehicle override
+   * Get congestion ratio for city health score
    */
-  async activateEmergencyOverride(locationId) {
+  async getCongestionRatio() {
     try {
-      const updated = await TrafficData.findByIdAndUpdate(
-        locationId,
-        { emergencyOverride: true, signalStatus: 'green' },
-        { new: true }
-      );
-      
-      if (updated) {
-        await notificationService.createAlert({
-          type: 'warning',
-          module: 'traffic',
-          title: 'Emergency Vehicle Override Activated',
-          message: `Traffic signals overridden at ${updated.location} for emergency vehicle passage.`,
-          priority: 'high',
-          relatedId: updated._id
-        });
-      }
-      return updated;
-    } catch (error) {
-      console.error('Emergency override error:', error.message);
-      throw error;
-    }
-  },
+      const totalSignals = await TrafficSignal.countDocuments();
+      if (totalSignals === 0) return 0;
 
-  /**
-   * Deactivate emergency override
-   */
-  async deactivateEmergencyOverride(locationId) {
-    try {
-      const updated = await TrafficData.findByIdAndUpdate(
-        locationId,
-        { emergencyOverride: false },
-        { new: true }
-      );
-      return updated;
+      let highCount = 0;
+      const signals = await TrafficSignal.find().select('_id');
+      for (const signal of signals) {
+        const latest = await TrafficSimulation.findOne({ signalId: signal._id })
+          .sort({ createdAt: -1 });
+        if (latest && latest.density === 'high') highCount++;
+      }
+
+      return highCount / totalSignals;
     } catch (error) {
-      console.error('Deactivate override error:', error.message);
-      throw error;
+      console.error('Congestion ratio error:', error.message);
+      return 0;
     }
   }
 };

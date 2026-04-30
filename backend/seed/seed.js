@@ -3,7 +3,8 @@ require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') })
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 const User = require('../models/User')
-const TrafficData = require('../models/TrafficData')
+const TrafficSignal = require('../models/TrafficSignal')
+const TrafficSimulation = require('../models/TrafficSimulation')
 const WasteData = require('../models/WasteData')
 const Bin = require('../models/Bin')
 const WaterData = require('../models/WaterData')
@@ -49,22 +50,17 @@ const getNearbyCoordinates = (zone = 'central', seed = 0, spread = 0.012) => {
   return toCoordinatePoint(lat, lng)
 }
 
-const trafficLocations = [
-  { location: 'MG Road Junction', zone: 'central' },
-  { location: 'Station Road Crossing', zone: 'central' },
-  { location: 'Nehru Nagar Signal', zone: 'north' },
-  { location: 'Gandhi Chowk', zone: 'north' },
-  { location: 'Ambedkar Circle', zone: 'south' },
-  { location: 'Patel Bridge', zone: 'south' },
-  { location: 'Industrial Area Gate', zone: 'east' },
-  { location: 'IT Park Entry', zone: 'east' },
-  { location: 'University Road', zone: 'west' },
-  { location: 'Mall Road Intersection', zone: 'west' },
-  { location: 'Highway Toll Plaza', zone: 'north' },
-  { location: 'Bus Stand Junction', zone: 'central' },
-  { location: 'Railway Crossing', zone: 'south' },
-  { location: 'Bypass Road', zone: 'east' },
-  { location: 'Ring Road Signal', zone: 'west' },
+const trafficSignals = [
+  { name: 'MG Road Junction', zone: 'central', dirs: ['N','S','E','W'] },
+  { name: 'Station Road Crossing', zone: 'central', dirs: ['N','S','E','W'] },
+  { name: 'Nehru Nagar Signal', zone: 'north', dirs: ['N','S','E','W','NE'] },
+  { name: 'Gandhi Chowk', zone: 'north', dirs: ['N','S','E','W'] },
+  { name: 'Ambedkar Circle', zone: 'south', dirs: ['N','S','E','W','SE','NW'] },
+  { name: 'Patel Bridge', zone: 'south', dirs: ['N','S'] },
+  { name: 'Industrial Area Gate', zone: 'east', dirs: ['N','S','E','W'] },
+  { name: 'IT Park Entry', zone: 'east', dirs: ['N','S','E'] },
+  { name: 'University Road', zone: 'west', dirs: ['N','S','E','W'] },
+  { name: 'Mall Road Intersection', zone: 'west', dirs: ['N','S','E','W','NE','SW'] },
 ]
 
 const wasteLocations = [
@@ -111,7 +107,8 @@ const seed = async () => {
     // Clear all existing data
     await Promise.all([
       User.deleteMany({}),
-      TrafficData.deleteMany({}),
+      TrafficSignal.deleteMany({}),
+      TrafficSimulation.deleteMany({}),
       WasteData.deleteMany({}),
       Bin.deleteMany({}),
       WaterData.deleteMany({}),
@@ -196,24 +193,47 @@ const seed = async () => {
     const operators = users.filter((u) => u.role === 'operator')
     const citizens = users.filter((u) => u.role === 'user')
 
-    // --- TRAFFIC DATA ---
-    const congestionLevels = ['low', 'medium', 'high']
-    const trafficData = trafficLocations.map((loc, i) => ({
-      ...loc,
-      coordinates: getNearbyCoordinates(loc.zone, i, 0.014),
-      congestionLevel: congestionLevels[Math.floor(Math.random() * 3)],
-      vehicleCount: Math.floor(Math.random() * 500) + 50,
-      averageSpeed: Math.floor(Math.random() * 60) + 10,
-      signalStatus: ['green', 'yellow', 'red'][Math.floor(Math.random() * 3)],
-      incidentReported: Math.random() > 0.8,
-      incidentType:
-        Math.random() > 0.8
-          ? ['accident', 'roadwork', 'breakdown'][Math.floor(Math.random() * 3)]
-          : 'none',
-      predictedCongestion: congestionLevels[Math.floor(Math.random() * 3)],
-    }))
-    await TrafficData.create(trafficData)
-    console.log(`🚗 Created ${trafficData.length} traffic records`)
+    // --- SMART TRAFFIC SIGNALS ---
+    for (let i = 0; i < trafficSignals.length; i++) {
+      const loc = trafficSignals[i]
+      const coords = getNearbyCoordinates(loc.zone, i, 0.014)
+      const signal = await TrafficSignal.create({
+        name: loc.name,
+        latitude: coords.lat,
+        longitude: coords.lng,
+        directions: loc.dirs,
+      })
+      // Create a seed simulation for each
+      const dirCounts = {}
+      let totalCount = 0
+      for (const d of loc.dirs) {
+        const car = Math.floor(Math.random() * 15)
+        const bike = Math.floor(Math.random() * 10)
+        const bus = Math.floor(Math.random() * 3)
+        const truck = Math.floor(Math.random() * 5)
+        const total = car + bike + bus + truck
+        dirCounts[d] = { car, bike, bus, truck, total }
+        totalCount += total
+      }
+      const groupTotals = signal.groups.map(g => g.reduce((s, d) => s + (dirCounts[d]?.total || 0), 0))
+      const maxIdx = groupTotals.indexOf(Math.max(...groupTotals))
+      const avg = loc.dirs.length > 0 ? totalCount / loc.dirs.length : 0
+      const density = avg > 15 ? 'high' : avg >= 5 ? 'medium' : 'low'
+      const signalTime = avg > 15 ? 40 : avg >= 5 ? 25 : 10
+      await TrafficSimulation.create({
+        signalId: signal._id,
+        directionCounts: dirCounts,
+        totalCount,
+        density,
+        activeGroup: maxIdx,
+        signalTime,
+        groupTotals
+      })
+      signal.activeGroup = maxIdx
+      signal.signalTime = signalTime
+      await signal.save()
+    }
+    console.log(`🚦 Created ${trafficSignals.length} smart traffic signals`)
 
     // --- WASTE BINS (new Bin model) ---
     const binData = wasteLocations.map((loc, i) => {

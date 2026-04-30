@@ -146,11 +146,12 @@ const weatherService = {
   async computeAlerts() {
     const alerts = [];
 
-    // Get latest reading per zone
+    // Get latest reading per ESP32 device
     const zones = await WeatherData.aggregate([
       { $sort: { timestamp: -1 } },
       { $group: {
-        _id: '$zone',
+        _id: '$esp32_id',
+        zone: { $first: '$zone' },
         temperature: { $first: '$temperature' },
         humidity: { $first: '$humidity' },
         aqi: { $first: '$aqi' },
@@ -168,18 +169,18 @@ const weatherService = {
         alerts.push({
           type: 'heat',
           severity: 'critical',
-          zone: z._id,
+          zone: `${z._id} (${z.zone || 'unknown'})`,
           title: '🔥 Heat Risk Alert',
-          message: `Temperature in ${z._id} is ${z.temperature}°C — extreme heat warning.`,
+          message: `Temperature at ${z._id} is ${z.temperature}°C — extreme heat warning.`,
           value: z.temperature
         });
       } else if (z.temperature > 38) {
         alerts.push({
           type: 'heat',
           severity: 'warning',
-          zone: z._id,
+          zone: `${z._id} (${z.zone || 'unknown'})`,
           title: '🌡️ High Temperature',
-          message: `Temperature in ${z._id} is ${z.temperature}°C — stay hydrated.`,
+          message: `Temperature at ${z._id} is ${z.temperature}°C — stay hydrated.`,
           value: z.temperature
         });
       }
@@ -189,9 +190,9 @@ const weatherService = {
         alerts.push({
           type: 'cold',
           severity: 'warning',
-          zone: z._id,
+          zone: `${z._id} (${z.zone || 'unknown'})`,
           title: '❄️ Cold Alert',
-          message: `Temperature in ${z._id} dropped to ${z.temperature}°C.`,
+          message: `Temperature at ${z._id} dropped to ${z.temperature}°C.`,
           value: z.temperature
         });
       }
@@ -201,18 +202,18 @@ const weatherService = {
         alerts.push({
           type: 'aqi',
           severity: 'critical',
-          zone: z._id,
+          zone: `${z._id} (${z.zone || 'unknown'})`,
           title: '⚠️ Hazardous Air Quality',
-          message: `AQI in ${z._id} is ${z.aqi} — avoid outdoor activities.`,
+          message: `AQI at ${z._id} is ${z.aqi} — avoid outdoor activities.`,
           value: z.aqi
         });
       } else if (z.aqi > 150) {
         alerts.push({
           type: 'aqi',
           severity: 'warning',
-          zone: z._id,
+          zone: `${z._id} (${z.zone || 'unknown'})`,
           title: '⚠️ Poor Air Quality',
-          message: `AQI in ${z._id} is ${z.aqi} — sensitive groups take precautions.`,
+          message: `AQI at ${z._id} is ${z.aqi} — sensitive groups take precautions.`,
           value: z.aqi
         });
       }
@@ -222,9 +223,9 @@ const weatherService = {
         alerts.push({
           type: 'rain',
           severity: 'warning',
-          zone: z._id,
+          zone: `${z._id} (${z.zone || 'unknown'})`,
           title: '🌧️ Rain Alert Expected',
-          message: `Humidity ${z.humidity}% in ${z._id} + ${city.rain_probability}% rain probability. Carry umbrella!`,
+          message: `Humidity ${z.humidity}% at ${z._id} + ${city.rain_probability}% rain probability. Carry umbrella!`,
           value: city.rain_probability
         });
       }

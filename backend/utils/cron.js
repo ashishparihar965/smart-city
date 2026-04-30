@@ -109,21 +109,13 @@ const initCronJobs = () => {
     }
   })
 
-  // Every 60 seconds: Simulate IoT fill-level increments for waste bins
-  cron.schedule('* * * * *', async () => {
+  // Bin fill levels now come from real ESP32 ultrasonic sensor (distance → fill_level)
+  // via POST /api/iot/esp32/data integration. No more dummy simulation.
+  // This cron just checks for bins needing collection alerts.
+  cron.schedule('*/5 * * * *', async () => {
     try {
-      const bins = await Bin.find({ fill_level: { $lt: 100 } })
-      if (bins.length === 0) return
-
-      let updated = 0
-      for (const bin of bins) {
-        const increment = Math.floor(Math.random() * 5) + 1
-        bin.fill_level = Math.min(100, bin.fill_level + increment)
-        await bin.save() // triggers pre-save hook for status
-        updated++
-      }
-
-      if (updated > 0) {
+      const fullBins = await Bin.countDocuments({ fill_level: { $gt: 80 } })
+      if (fullBins > 0) {
         const io = getIo()
         if (io) {
           const allBins = await Bin.find().sort({ fill_level: -1 }).lean()
@@ -131,53 +123,15 @@ const initCronJobs = () => {
         }
       }
     } catch (err) {
-      console.error('Cron bin fill simulation error:', err.message)
+      console.error('Cron bin check error:', err.message)
     }
   })
 
-  // ── Weather: Simulate ESP32 data every 60 seconds ──
-  const weatherService = require('../services/weatherService')
-
-  cron.schedule('* * * * *', async () => {
-    try {
-      const readings = await weatherService.simulateESP32Data()
-      if (readings.length > 0) {
-        const io = getIo()
-        if (io) {
-          // Send latest zone data
-          const WeatherData = require('../models/WeatherData')
-          const zones = await WeatherData.aggregate([
-            { $sort: { timestamp: -1 } },
-            { $group: {
-              _id: '$zone',
-              esp32_id: { $first: '$esp32_id' },
-              temperature: { $first: '$temperature' },
-              humidity: { $first: '$humidity' },
-              aqi: { $first: '$aqi' },
-              light_level: { $first: '$light_level' },
-              is_daytime: { $first: '$is_daytime' },
-              timestamp: { $first: '$timestamp' }
-            }},
-            { $sort: { _id: 1 } }
-          ])
-          io.emit('weather:zone-update', zones.map(z => ({
-            zone: z._id,
-            esp32_id: z.esp32_id,
-            temperature: z.temperature,
-            humidity: z.humidity,
-            aqi: z.aqi,
-            light_level: z.light_level,
-            is_daytime: z.is_daytime,
-            timestamp: z.timestamp
-          })))
-        }
-      }
-    } catch (err) {
-      console.error('Cron weather simulation error:', err.message)
-    }
-  })
+  // Weather zone data now comes from real ESP32 sensors (temperature/humidity/mq135/ldr)
+  // via POST /api/iot/esp32/data integration. No more dummy simulation.
 
   // ── Weather: Fetch city weather from Open-Meteo every 10 minutes ──
+  const weatherService = require('../services/weatherService')
   cron.schedule('*/10 * * * *', async () => {
     try {
       const cityData = await weatherService.fetchCityWeather()

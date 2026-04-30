@@ -263,9 +263,9 @@ const Dashboard = () => {
         : '#ef4444';
 
   const trafficChartData = [
-    { name: 'Low', value: data.traffic?.lowCongestion || 0, fill: '#10b981' },
-    { name: 'Medium', value: data.traffic?.mediumCongestion || 0, fill: '#f59e0b' },
-    { name: 'High', value: data.traffic?.highCongestion || 0, fill: '#ef4444' }
+    { name: 'Low', value: data.traffic?.lowDensity || 0, fill: '#10b981' },
+    { name: 'Medium', value: data.traffic?.mediumDensity || 0, fill: '#f59e0b' },
+    { name: 'High', value: data.traffic?.highDensity || 0, fill: '#ef4444' }
   ];
 
   const wasteChartData = [
@@ -357,11 +357,11 @@ const Dashboard = () => {
         <div className="overview-card card-traffic">
           <div className="oc-icon"><Car size={20} /></div>
           <div className="oc-content">
-            <span className="oc-value">{data.traffic?.totalLocations || 0}</span>
-            <span className="oc-label">Traffic Points</span>
+            <span className="oc-value">{data.traffic?.totalSignals || 0}</span>
+            <span className="oc-label">Traffic Signals</span>
           </div>
           <div className="oc-stat">
-            <span className="oc-stat-value badge badge-red">{data.traffic?.highCongestion || 0} High</span>
+            <span className="oc-stat-value badge badge-red">{data.traffic?.highDensity || 0} High</span>
           </div>
         </div>
 

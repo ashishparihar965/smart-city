@@ -37,8 +37,8 @@ router.post('/esp', async (req, res, next) => {
     });
 
     // Broadcast to connected clients
-    const latestZones = await getLatestZoneData();
-    socketUtils.broadcast('weather:zone-update', latestZones);
+    const latestDevices = await getLatestDeviceData();
+    socketUtils.broadcast('weather:zone-update', latestDevices);
 
     res.status(201).json({ success: true, data: reading });
   } catch (error) {
@@ -46,17 +46,17 @@ router.post('/esp', async (req, res, next) => {
   }
 });
 
-// GET /api/weather/zones — latest data per zone
+// GET /api/weather/zones — latest data per ESP32 device
 router.get('/zones', auth, async (req, res, next) => {
   try {
-    const zones = await getLatestZoneData();
-    res.json({ success: true, data: zones });
+    const devices = await getLatestDeviceData();
+    res.json({ success: true, data: devices });
   } catch (error) {
     next(error);
   }
 });
 
-// GET /api/weather/zones/history — zone history (last 24h for charts)
+// GET /api/weather/zones/history — sensor history per ESP32 device (last 24h for charts)
 router.get('/zones/history', auth, async (req, res, next) => {
   try {
     const hours = parseInt(req.query.hours) || 24;
@@ -64,14 +64,15 @@ router.get('/zones/history', auth, async (req, res, next) => {
 
     const history = await WeatherData.find({ timestamp: { $gte: since } })
       .sort({ timestamp: 1 })
-      .select('zone temperature humidity aqi light_level is_daytime timestamp')
+      .select('esp32_id zone temperature humidity aqi light_level is_daytime timestamp')
       .lean();
 
-    // Group by zone
+    // Group by esp32_id (each device gets its own line on the chart)
     const grouped = {};
     history.forEach(r => {
-      if (!grouped[r.zone]) grouped[r.zone] = [];
-      grouped[r.zone].push({
+      const key = r.esp32_id || r.zone;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push({
         time: r.timestamp,
         temperature: r.temperature,
         humidity: r.humidity,
@@ -113,14 +114,14 @@ router.get('/alerts', auth, async (req, res, next) => {
   }
 });
 
-// Helper: get latest reading per zone
-async function getLatestZoneData() {
-  const zones = await WeatherData.aggregate([
+// Helper: get latest reading per ESP32 device
+async function getLatestDeviceData() {
+  const devices = await WeatherData.aggregate([
     { $sort: { timestamp: -1 } },
     {
       $group: {
-        _id: '$zone',
-        esp32_id: { $first: '$esp32_id' },
+        _id: '$esp32_id',
+        zone: { $first: '$zone' },
         temperature: { $first: '$temperature' },
         humidity: { $first: '$humidity' },
         aqi: { $first: '$aqi' },
@@ -132,15 +133,15 @@ async function getLatestZoneData() {
     { $sort: { _id: 1 } }
   ]);
 
-  return zones.map(z => ({
-    zone: z._id,
-    esp32_id: z.esp32_id,
-    temperature: z.temperature,
-    humidity: z.humidity,
-    aqi: z.aqi,
-    light_level: z.light_level,
-    is_daytime: z.is_daytime,
-    timestamp: z.timestamp
+  return devices.map(d => ({
+    zone: d.zone,
+    esp32_id: d._id,
+    temperature: d.temperature,
+    humidity: d.humidity,
+    aqi: d.aqi,
+    light_level: d.light_level,
+    is_daytime: d.is_daytime,
+    timestamp: d.timestamp
   }));
 }
 

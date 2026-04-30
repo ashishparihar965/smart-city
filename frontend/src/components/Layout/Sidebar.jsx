@@ -30,6 +30,7 @@ import {
   ParkingSquare,
   Truck,
   CloudSun,
+  TrafficCone,
 } from 'lucide-react'
 import './Sidebar.css'
 
@@ -89,7 +90,7 @@ const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
       items.unshift(
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/map', label: 'Live Map', icon: Map },
-        { path: '/traffic', label: 'Traffic', icon: Car },
+        { path: '/traffic', label: 'Traffic Mgmt', icon: TrafficCone },
         { path: '/waste', label: 'Waste Mgmt', icon: Trash2 },
         { path: '/weather', label: 'Weather', icon: CloudSun },
         { path: '/water', label: 'Water', icon: Droplets },
@@ -113,6 +114,7 @@ const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }) => {
       items.push(
         { path: '/assistant', label: 'City Assistant', icon: Bot },
         { path: '/parking', label: 'Smart Parking', icon: ParkingSquare },
+        { path: '/smart-traffic', label: 'Smart Traffic', icon: TrafficCone },
         { path: '/dustbins', label: 'Waste / Dustbins', icon: Trash2 },
         { path: '/weather', label: 'Weather', icon: CloudSun },
         {

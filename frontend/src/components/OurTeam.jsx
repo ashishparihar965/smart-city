@@ -3,34 +3,26 @@ import { Link2, Code, Palette, Brain, Megaphone } from 'lucide-react';
 
 const teamMembers = [
   {
-    name: 'Samarth Kapdi',
-    role: 'Team Lead & UI/UX Designer',
+    name: 'Nikhil Soni',
     img: '/WhatsApp%20Image%202026-04-04%20at%202.23.02%20PM.jpeg',
-    linkedin: 'https://www.linkedin.com/in/samarthkapdi/',
     icon: Code,
     accent: 'from-blue-500 to-blue-700',
   },
   {
     name: 'Ashish Parihar',
-    role: 'Backend Developer & DevOps & System Architect',
     img: '/WhatsApp%20Image%202026-04-04%20at%202.36.56%20PM.jpeg',
-    linkedin: 'https://www.linkedin.com/in/ashish-parihar-96b2b83b1/',
     icon: Megaphone,
     accent: 'from-green-500 to-green-700',
   },
   {
-    name: 'Nikhil Soni',
-    role: 'Backend Lead',
+    name: 'Rashi Bhawsar',
     img: '/WhatsApp%20Image%202026-04-04%20at%202.23.07%20PM.jpeg',
-    linkedin: 'https://www.linkedin.com/in/nikhilsoni111/',
     icon: Palette,
     accent: 'from-purple-500 to-purple-700',
   },
   {
-    name: 'Rohit Rajure',
-    role: 'QA & Testing',
+    name: 'Khushboo Patel',
     img: '/WhatsApp%20Image%202026-04-04%20at%202.23.11%20PM.jpeg',
-    linkedin: 'https://www.linkedin.com/in/rohit-rajure-bb9508302/',
     icon: Megaphone,
     accent: 'from-green-500 to-green-700',
   },
@@ -84,9 +76,9 @@ export default function OurTeam() {
                       src={member.img}
                       alt={member.name}
                       onError={(e) => {
-                         // Fallback if image not found
-                         e.target.style.display = 'none';
-                         e.target.parentElement.innerHTML = `<div style="width: 100%; height: 100%; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--text-muted);">${member.name.charAt(0)}</div>`;
+                        // Fallback if image not found
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = `<div style="width: 100%; height: 100%; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--text-muted);">${member.name.charAt(0)}</div>`;
                       }}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

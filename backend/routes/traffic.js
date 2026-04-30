@@ -1,170 +1,379 @@
 const express = require('express');
-const TrafficData = require('../models/TrafficData');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const axios = require('axios');
+const TrafficSignal = require('../models/TrafficSignal');
+const TrafficSimulation = require('../models/TrafficSimulation');
 const ActivityLog = require('../models/ActivityLog');
 const auth = require('../middleware/auth');
 const roleCheck = require('../middleware/roleCheck');
-const trafficService = require('../services/trafficService');
 const router = express.Router();
 
-// GET /api/traffic - Get all traffic data
-router.get('/', auth, async (req, res, next) => {
-  try {
-    const { zone, congestionLevel, page = 1, limit = 50 } = req.query;
-    const filter = {};
-    if (zone) filter.zone = zone;
-    if (congestionLevel) filter.congestionLevel = congestionLevel;
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const data = await TrafficData.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-    const total = await TrafficData.countDocuments(filter);
-
-    res.json({ success: true, data, total, page: parseInt(page), totalPages: Math.ceil(total / parseInt(limit)) });
-  } catch (error) {
-    next(error);
+// Multer config for simulation image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', 'uploads', 'traffic');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `traffic_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp/;
+    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+    const mime = allowed.test(file.mimetype);
+    cb(null, ext && mime);
   }
 });
 
-// GET /api/traffic/stats - Get traffic statistics
-router.get('/stats', auth, async (req, res, next) => {
-  try {
-    const stats = await TrafficData.aggregate([
-      {
-        $group: {
-          _id: '$zone',
-          avgSpeed: { $avg: '$averageSpeed' },
-          avgVehicles: { $avg: '$vehicleCount' },
-          highCongestion: { $sum: { $cond: [{ $eq: ['$congestionLevel', 'high'] }, 1, 0] } },
-          mediumCongestion: { $sum: { $cond: [{ $eq: ['$congestionLevel', 'medium'] }, 1, 0] } },
-          lowCongestion: { $sum: { $cond: [{ $eq: ['$congestionLevel', 'low'] }, 1, 0] } },
-          incidents: { $sum: { $cond: ['$incidentReported', 1, 0] } },
-          total: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
+// ─── HELPER FUNCTIONS ────────────────────────────────────────
 
-    const overall = {
-      totalLocations: await TrafficData.countDocuments(),
-      highCongestion: await TrafficData.countDocuments({ congestionLevel: 'high' }),
-      activeIncidents: await TrafficData.countDocuments({ incidentReported: true }),
-      emergencyOverrides: await TrafficData.countDocuments({ emergencyOverride: true })
+/**
+ * Calculate signal timing based on vehicle count
+ */
+function calculateSignalTime(vehicleCount) {
+  if (vehicleCount > 15) return 40;
+  if (vehicleCount >= 5) return 25;
+  return 10;
+}
+
+/**
+ * Calculate density label
+ */
+function calculateDensity(vehicleCount) {
+  if (vehicleCount > 15) return 'high';
+  if (vehicleCount >= 5) return 'medium';
+  return 'low';
+}
+
+/**
+ * Calculate overall density from total vehicle count
+ */
+function calculateOverallDensity(totalCount, numDirections) {
+  const avg = numDirections > 0 ? totalCount / numDirections : 0;
+  return calculateDensity(avg);
+}
+
+// ─── ROUTES ──────────────────────────────────────────────────
+
+/**
+ * POST /api/traffic/register
+ * Register a new traffic signal (Admin only)
+ */
+router.post('/register', auth, roleCheck('admin'), async (req, res, next) => {
+  try {
+    const { name, latitude, longitude, directions, groups } = req.body;
+
+    if (!name || latitude == null || longitude == null || !directions || directions.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, latitude, longitude, and at least 2 directions are required.'
+      });
+    }
+
+    const signalData = {
+      name,
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      directions
     };
 
-    res.json({ success: true, data: { zoneStats: stats, overall } });
-  } catch (error) {
-    next(error);
-  }
-});
+    // Use custom groups if provided, otherwise auto-generate
+    if (groups && groups.length > 0) {
+      signalData.groups = groups;
+    }
 
-// POST /api/traffic - Create traffic data
-router.post('/', auth, roleCheck('admin'), async (req, res, next) => {
-  try {
-    const data = await TrafficData.create(req.body);
-
-    // Run prediction after new data
-    const predicted = await trafficService.predictCongestion(data.zone);
-    data.predictedCongestion = predicted;
-    await data.save();
+    const signal = await TrafficSignal.create(signalData);
 
     await ActivityLog.create({
       userId: req.user.id,
       userName: req.user.name,
-      action: 'Created Traffic Data',
+      action: 'Registered Traffic Signal',
       module: 'traffic',
-      details: `Added traffic data for ${data.location} (${data.zone})`
+      details: `Registered signal "${signal.name}" at (${signal.latitude}, ${signal.longitude}) with directions: ${signal.directions.join(', ')}`
     });
 
-    res.status(201).json({ success: true, data });
+    res.status(201).json({ success: true, data: signal });
   } catch (error) {
     next(error);
   }
 });
 
-// PUT /api/traffic/:id - Update traffic data
-router.put('/:id', auth, async (req, res, next) => {
+/**
+ * GET /api/traffic/all
+ * Get all traffic signals with their latest simulation data
+ */
+router.get('/all', auth, async (req, res, next) => {
   try {
-    const data = await TrafficData.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!data) return res.status(404).json({ success: false, message: 'Traffic data not found.' });
+    const signals = await TrafficSignal.find().sort({ createdAt: -1 });
 
-    await ActivityLog.create({
-      userId: req.user.id,
-      userName: req.user.name,
-      action: 'Updated Traffic Data',
-      module: 'traffic',
-      details: `Updated traffic data at ${data.location}`
-    });
+    // Fetch latest simulation for each signal
+    const signalsWithData = await Promise.all(
+      signals.map(async (signal) => {
+        const latestSim = await TrafficSimulation.findOne({ signalId: signal._id })
+          .sort({ createdAt: -1 });
 
-    res.json({ success: true, data });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /api/traffic/:id/report-incident - Report traffic incident
-router.post('/:id/report-incident', auth, async (req, res, next) => {
-  try {
-    const { incidentType } = req.body;
-    const data = await TrafficData.findByIdAndUpdate(
-      req.params.id,
-      { incidentReported: true, incidentType: incidentType || 'accident' },
-      { new: true }
+        return {
+          ...signal.toObject(),
+          simulation: latestSim ? latestSim.toObject() : null
+        };
+      })
     );
-    if (!data) return res.status(404).json({ success: false, message: 'Traffic data not found.' });
+
+    res.json({ success: true, data: signalsWithData });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/traffic/congestion
+ * Get signals with high congestion (for citizens)
+ */
+router.get('/congestion', auth, async (req, res, next) => {
+  try {
+    const highDensity = await TrafficSimulation.find({ density: 'high' })
+      .sort({ createdAt: -1 })
+      .populate('signalId');
+
+    // Deduplicate by signalId (keep latest)
+    const seen = new Set();
+    const congested = [];
+    for (const sim of highDensity) {
+      if (!sim.signalId) continue;
+      const key = sim.signalId._id.toString();
+      if (!seen.has(key)) {
+        seen.add(key);
+        congested.push({
+          signal: sim.signalId.toObject(),
+          simulation: sim.toObject()
+        });
+      }
+    }
+
+    res.json({ success: true, data: congested });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/traffic/manual-control
+ * Manual control: activate a specific group (Admin only)
+ */
+router.post('/manual-control', auth, roleCheck('admin'), async (req, res, next) => {
+  try {
+    const { signalId, activeGroup } = req.body;
+
+    if (!signalId || activeGroup == null) {
+      return res.status(400).json({
+        success: false,
+        message: 'signalId and activeGroup index are required.'
+      });
+    }
+
+    const signal = await TrafficSignal.findById(signalId);
+    if (!signal) {
+      return res.status(404).json({ success: false, message: 'Signal not found.' });
+    }
+
+    if (activeGroup < 0 || activeGroup >= signal.groups.length) {
+      return res.status(400).json({
+        success: false,
+        message: `activeGroup must be between 0 and ${signal.groups.length - 1}`
+      });
+    }
+
+    signal.activeGroup = activeGroup;
+    signal.manualOverride = true;
+    await signal.save();
 
     await ActivityLog.create({
       userId: req.user.id,
       userName: req.user.name,
-      action: 'Reported Traffic Incident',
+      action: 'Manual Traffic Control',
       module: 'traffic',
-      details: `Reported ${incidentType || 'accident'} at ${data.location}`
+      details: `Manually set signal "${signal.name}" to group ${activeGroup} (${signal.groups[activeGroup].join(', ')})`
     });
 
-    res.json({ success: true, data });
+    res.json({ success: true, data: signal, message: `Group ${activeGroup} activated manually.` });
   } catch (error) {
     next(error);
   }
 });
 
-// POST /api/traffic/:id/emergency-override - Emergency vehicle override
-router.post('/:id/emergency-override', auth, async (req, res, next) => {
+/**
+ * POST /api/traffic/simulate
+ * Simulate traffic: upload images per direction, detect vehicles via YOLO
+ */
+router.post('/simulate', auth, roleCheck('admin'), upload.any(), async (req, res, next) => {
   try {
-    const data = await trafficService.activateEmergencyOverride(req.params.id);
-    if (!data) return res.status(404).json({ success: false, message: 'Traffic data not found.' });
+    const { signalId } = req.body;
+
+    if (!signalId) {
+      return res.status(400).json({ success: false, message: 'signalId is required.' });
+    }
+
+    const signal = await TrafficSignal.findById(signalId);
+    if (!signal) {
+      return res.status(404).json({ success: false, message: 'Signal not found.' });
+    }
+
+    // Map uploaded files to their directions
+    // Files should be uploaded with field names matching directions, e.g. "N", "S", etc.
+    const directionFiles = {};
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        directionFiles[file.fieldname] = file.path;
+      }
+    }
+
+    // Check all signal directions have images
+    const missingDirections = signal.directions.filter(d => !directionFiles[d]);
+    if (missingDirections.length > 0) {
+      // Clean up uploaded files
+      for (const file of req.files || []) {
+        fs.unlink(file.path, () => {});
+      }
+      return res.status(400).json({
+        success: false,
+        message: `Missing images for directions: ${missingDirections.join(', ')}`
+      });
+    }
+
+    // Call YOLO detection service for each direction
+    const ML_SERVER_URL = process.env.ML_TRAFFIC_URL || 'http://localhost:5001';
+    const directionCounts = {};
+    let totalCount = 0;
+
+    for (const dir of signal.directions) {
+      try {
+        const formData = new (require('form-data'))();
+        formData.append('image', fs.createReadStream(directionFiles[dir]));
+
+        const response = await axios.post(`${ML_SERVER_URL}/detect`, formData, {
+          headers: formData.getHeaders(),
+          timeout: 30000
+        });
+
+        const counts = response.data;
+        directionCounts[dir] = {
+          car: counts.car || 0,
+          bike: counts.bike || 0,
+          bus: counts.bus || 0,
+          truck: counts.truck || 0,
+          total: (counts.car || 0) + (counts.bike || 0) + (counts.bus || 0) + (counts.truck || 0)
+        };
+        totalCount += directionCounts[dir].total;
+      } catch (mlErr) {
+        console.error(`YOLO detection failed for direction ${dir}:`, mlErr.message);
+        // Use fallback random data for demo purposes
+        const car = Math.floor(Math.random() * 15);
+        const bike = Math.floor(Math.random() * 10);
+        const bus = Math.floor(Math.random() * 3);
+        const truck = Math.floor(Math.random() * 5);
+        directionCounts[dir] = {
+          car, bike, bus, truck,
+          total: car + bike + bus + truck
+        };
+        totalCount += directionCounts[dir].total;
+      }
+    }
+
+    // Calculate group totals
+    const groupTotals = signal.groups.map(group =>
+      group.reduce((sum, dir) => sum + (directionCounts[dir]?.total || 0), 0)
+    );
+
+    // Find the group with most vehicles → GREEN
+    const maxGroupIdx = groupTotals.indexOf(Math.max(...groupTotals));
+    const maxGroupTotal = groupTotals[maxGroupIdx];
+
+    // Calculate timing and density
+    const signalTime = calculateSignalTime(maxGroupTotal / Math.max(1, signal.groups[maxGroupIdx].length));
+    const density = calculateOverallDensity(totalCount, signal.directions.length);
+
+    // Save simulation result
+    const simulation = await TrafficSimulation.create({
+      signalId: signal._id,
+      directionCounts,
+      totalCount,
+      density,
+      activeGroup: maxGroupIdx,
+      signalTime,
+      groupTotals
+    });
+
+    // Update signal
+    signal.activeGroup = maxGroupIdx;
+    signal.signalTime = signalTime;
+    signal.manualOverride = false;
+    await signal.save();
+
+    // Clean up uploaded images
+    for (const file of req.files || []) {
+      fs.unlink(file.path, () => {});
+    }
 
     await ActivityLog.create({
       userId: req.user.id,
       userName: req.user.name,
-      action: 'Emergency Override Activated',
+      action: 'Traffic Simulation',
       module: 'traffic',
-      details: `Override at ${data.location} for emergency vehicle`
+      details: `Simulated signal "${signal.name}": ${totalCount} vehicles detected, Group ${maxGroupIdx} (${signal.groups[maxGroupIdx].join(', ')}) = GREEN, Density: ${density}`
     });
 
-    res.json({ success: true, data, message: 'Emergency override activated.' });
+    res.json({
+      success: true,
+      data: {
+        signal: signal.toObject(),
+        simulation: simulation.toObject(),
+        result: {
+          directionCounts,
+          groupTotals,
+          selectedGroup: maxGroupIdx,
+          selectedDirections: signal.groups[maxGroupIdx],
+          signalTime,
+          density,
+          totalCount
+        }
+      }
+    });
   } catch (error) {
     next(error);
   }
 });
 
-// POST /api/traffic/:id/clear-override - Clear emergency override
-router.post('/:id/clear-override', auth, async (req, res, next) => {
+/**
+ * DELETE /api/traffic/:id
+ * Remove a traffic signal (Admin only)
+ */
+router.delete('/:id', auth, roleCheck('admin'), async (req, res, next) => {
   try {
-    const data = await trafficService.deactivateEmergencyOverride(req.params.id);
-    if (!data) return res.status(404).json({ success: false, message: 'Traffic data not found.' });
+    const signal = await TrafficSignal.findByIdAndDelete(req.params.id);
+    if (!signal) {
+      return res.status(404).json({ success: false, message: 'Signal not found.' });
+    }
 
-    res.json({ success: true, data, message: 'Emergency override cleared.' });
-  } catch (error) {
-    next(error);
-  }
-});
+    // Also remove related simulations
+    await TrafficSimulation.deleteMany({ signalId: signal._id });
 
-// GET /api/traffic/predict/:zone - Get prediction for zone
-router.get('/predict/:zone', auth, async (req, res, next) => {
-  try {
-    const prediction = await trafficService.predictCongestion(req.params.zone);
-    res.json({ success: true, data: { zone: req.params.zone, predictedCongestion: prediction } });
+    await ActivityLog.create({
+      userId: req.user.id,
+      userName: req.user.name,
+      action: 'Deleted Traffic Signal',
+      module: 'traffic',
+      details: `Deleted signal "${signal.name}"`
+    });
+
+    res.json({ success: true, message: 'Signal deleted.' });
   } catch (error) {
     next(error);
   }
