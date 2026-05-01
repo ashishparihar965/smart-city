@@ -551,9 +551,14 @@ router.post('/esp32/data', async (req, res, next) => {
         await WeatherData.create(weatherReading)
         integrations.push(`weather:${weatherReading.zone}→${weatherReading.temperature}°C`)
 
-        // Broadcast device weather update (grouped by esp32_id)
+        // Broadcast device weather update (registered devices only)
         if (io) {
+          // Get registered device IDs to filter out dummy data
+          const registeredDevs = await IoTDevice.find({}, { deviceId: 1 }).lean()
+          const registeredIds = registeredDevs.map(d => d.deviceId)
+
           const devices = await WeatherData.aggregate([
+            { $match: { esp32_id: { $in: registeredIds } } },
             { $sort: { timestamp: -1 } },
             { $group: {
               _id: '$esp32_id',

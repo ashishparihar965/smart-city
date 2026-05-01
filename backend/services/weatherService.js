@@ -1,6 +1,7 @@
 const axios = require('axios');
 const WeatherData = require('../models/WeatherData');
 const WeatherAPIData = require('../models/WeatherAPIData');
+const IoTDevice = require('../models/IoTDevice');
 
 // Indore coordinates
 const CITY_LAT = 22.7196;
@@ -33,14 +34,6 @@ const WMO_CODES = {
 };
 
 const getWeatherInfo = (code) => WMO_CODES[code] || { condition: 'Unknown', icon: '🌡️' };
-
-// ESP32 zones
-const ZONES = [
-  { id: 'ESP32-A', zone: 'Zone A', baseTemp: 32, baseHumidity: 55 },
-  { id: 'ESP32-B', zone: 'Zone B', baseTemp: 30, baseHumidity: 60 },
-  { id: 'ESP32-C', zone: 'Zone C', baseTemp: 34, baseHumidity: 50 },
-  { id: 'ESP32-D', zone: 'Zone D', baseTemp: 28, baseHumidity: 65 },
-];
 
 // AQI thresholds for MQ135 raw value → AQI approximation
 const mq135ToAqi = (raw) => {
@@ -107,47 +100,20 @@ const weatherService = {
   },
 
   /**
-   * Simulate ESP32 sensor data for all 4 zones
-   */
-  async simulateESP32Data() {
-    const readings = [];
-    const hour = new Date().getHours();
-    const isDaytimeHour = hour >= 6 && hour < 19;
-
-    for (const z of ZONES) {
-      // Add realistic variance
-      const tempVariance = (Math.random() - 0.5) * 6;
-      const humVariance = (Math.random() - 0.5) * 15;
-      const timeAdjust = isDaytimeHour ? 2 : -4; // warmer during day
-
-      const temperature = Math.round((z.baseTemp + tempVariance + timeAdjust) * 10) / 10;
-      const humidity = Math.max(20, Math.min(100, Math.round(z.baseHumidity + humVariance)));
-      const mq135Raw = Math.round(300 + Math.random() * 1800); // 300–2100 range
-      const ldrRaw = isDaytimeHour ? Math.round(400 + Math.random() * 600) : Math.round(50 + Math.random() * 200);
-
-      const reading = await WeatherData.create({
-        esp32_id: z.id,
-        zone: z.zone,
-        temperature,
-        humidity,
-        aqi: mq135ToAqi(mq135Raw),
-        light_level: ldrRaw,
-        timestamp: new Date()
-      });
-      readings.push(reading);
-    }
-
-    return readings;
-  },
-
-  /**
-   * Compute active weather alerts from latest data
+   * Compute active weather alerts from latest registered device data only
    */
   async computeAlerts() {
     const alerts = [];
 
-    // Get latest reading per ESP32 device
+    // Get registered device IDs
+    const registeredDevices = await IoTDevice.find({}, { deviceId: 1 }).lean();
+    const registeredIds = registeredDevices.map(d => d.deviceId);
+
+    if (registeredIds.length === 0) return alerts;
+
+    // Get latest reading per registered ESP32 device only
     const zones = await WeatherData.aggregate([
+      { $match: { esp32_id: { $in: registeredIds } } },
       { $sort: { timestamp: -1 } },
       { $group: {
         _id: '$esp32_id',
@@ -162,7 +128,7 @@ const weatherService = {
     // Get city data
     const city = await WeatherAPIData.findOne({ city: CITY_NAME }).lean();
 
-    // Check each zone
+    // Check each device
     for (const z of zones) {
       // Heat alert
       if (z.temperature > 40) {

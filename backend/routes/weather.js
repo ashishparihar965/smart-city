@@ -1,10 +1,17 @@
 const express = require('express');
 const WeatherData = require('../models/WeatherData');
 const WeatherAPIData = require('../models/WeatherAPIData');
+const IoTDevice = require('../models/IoTDevice');
 const weatherService = require('../services/weatherService');
 const auth = require('../middleware/auth');
 const socketUtils = require('../utils/socket');
 const router = express.Router();
+
+// Helper: get list of registered device IDs from IoTDevice collection
+async function getRegisteredDeviceIds() {
+  const devices = await IoTDevice.find({}, { deviceId: 1 }).lean();
+  return devices.map(d => d.deviceId);
+}
 
 // POST /api/weather/esp — receive ESP32 sensor data (public for hardware)
 router.post('/esp', async (req, res, next) => {
@@ -46,7 +53,7 @@ router.post('/esp', async (req, res, next) => {
   }
 });
 
-// GET /api/weather/zones — latest data per ESP32 device
+// GET /api/weather/zones — latest data per registered ESP32 device only
 router.get('/zones', auth, async (req, res, next) => {
   try {
     const devices = await getLatestDeviceData();
@@ -56,13 +63,19 @@ router.get('/zones', auth, async (req, res, next) => {
   }
 });
 
-// GET /api/weather/zones/history — sensor history per ESP32 device (last 24h for charts)
+// GET /api/weather/zones/history — sensor history for registered ESP32 devices (last 24h)
 router.get('/zones/history', auth, async (req, res, next) => {
   try {
     const hours = parseInt(req.query.hours) || 24;
     const since = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-    const history = await WeatherData.find({ timestamp: { $gte: since } })
+    // Only fetch history for registered devices
+    const registeredIds = await getRegisteredDeviceIds();
+
+    const history = await WeatherData.find({
+      timestamp: { $gte: since },
+      esp32_id: { $in: registeredIds }
+    })
       .sort({ timestamp: 1 })
       .select('esp32_id zone temperature humidity aqi light_level is_daytime timestamp')
       .lean();
@@ -70,7 +83,7 @@ router.get('/zones/history', auth, async (req, res, next) => {
     // Group by esp32_id (each device gets its own line on the chart)
     const grouped = {};
     history.forEach(r => {
-      const key = r.esp32_id || r.zone;
+      const key = r.esp32_id;
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push({
         time: r.timestamp,
@@ -104,7 +117,7 @@ router.get('/city', auth, async (req, res, next) => {
   }
 });
 
-// GET /api/weather/alerts — active weather alerts
+// GET /api/weather/alerts — active weather alerts (registered devices only)
 router.get('/alerts', auth, async (req, res, next) => {
   try {
     const alerts = await weatherService.computeAlerts();
@@ -114,9 +127,15 @@ router.get('/alerts', auth, async (req, res, next) => {
   }
 });
 
-// Helper: get latest reading per ESP32 device
+// Helper: get latest reading per REGISTERED ESP32 device only
 async function getLatestDeviceData() {
+  const registeredIds = await getRegisteredDeviceIds();
+
+  if (registeredIds.length === 0) return [];
+
   const devices = await WeatherData.aggregate([
+    // Only include data from registered devices
+    { $match: { esp32_id: { $in: registeredIds } } },
     { $sort: { timestamp: -1 } },
     {
       $group: {

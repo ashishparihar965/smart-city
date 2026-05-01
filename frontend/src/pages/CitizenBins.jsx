@@ -122,8 +122,8 @@ const CitizenBins = () => {
       <div className="citizen-bins-map-wrapper">
         <MapContainer center={MAP_CENTER} zoom={13} style={{ height: 'calc(100vh - 210px)', minHeight: '400px', width: '100%' }}>
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CartoDB'
           />
           {bins.length > 0 && <MapBounds bins={bins} />}
           {bins.map(bin => (
