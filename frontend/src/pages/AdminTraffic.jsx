@@ -6,7 +6,8 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import {
   TrafficCone, Plus, RefreshCw, X, Zap, Timer, Car,
-  Bike, Bus, Truck, Upload, Play, Shield, MapPin, Activity
+  Bike, Bus, Truck, Upload, Play, Shield, MapPin, Activity,
+  AlertTriangle, Eye
 } from 'lucide-react';
 import './AdminTraffic.css';
 
@@ -21,8 +22,6 @@ const signalIcon = (isHigh) => L.divIcon({
   iconSize: [28, 28], iconAnchor: [14, 14]
 });
 
-// LocationPicker removed — using LocationPickerModal instead
-
 const AdminTraffic = () => {
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +35,7 @@ const AdminTraffic = () => {
   const [registerForm, setRegisterForm] = useState({ name: '', latitude: '', longitude: '', directions: [] });
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [timerValues, setTimerValues] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
   const { addToast } = useToast();
 
   const fetchSignals = useCallback(async () => {
@@ -114,9 +114,12 @@ const AdminTraffic = () => {
       selected.directions.forEach(d => fd.append(d, simFiles[d]));
       const res = await trafficAPI.simulate(fd);
       setSimResult(res.data.data.result);
-      addToast('Simulation complete!', 'success');
+      addToast('✅ YOLO Detection Complete — Real results!', 'success');
       fetchSignals();
-    } catch (err) { addToast('Simulation failed', 'error'); }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Detection failed';
+      addToast(msg, 'error');
+    }
     finally { setSimLoading(false); }
   };
 
@@ -149,7 +152,7 @@ const AdminTraffic = () => {
       <div className="page-header">
         <div>
           <h1>🚦 Traffic Management</h1>
-          <p>Map-based smart traffic signal control with AI simulation</p>
+          <p>Real YOLO-based vehicle detection with AI signal optimization</p>
         </div>
         <div className="header-actions">
           <button className="btn btn-primary" onClick={() => setShowRegister(true)}><Plus size={14} /> Register Signal</button>
@@ -200,7 +203,7 @@ const AdminTraffic = () => {
                     <div key={d} className="signal-popup-row"><span>{d}:</span><span>{c?.total ?? 0} vehicles</span></div>
                   ))}
                   <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" onClick={() => openSimulate(sig)}>Simulate</button>
+                    <button className="btn btn-sm btn-primary" onClick={() => openSimulate(sig)}>Detect</button>
                     <button className="btn btn-sm btn-outline" onClick={() => setSelected(sig)}>Details</button>
                   </div>
                 </div>
@@ -243,7 +246,7 @@ const AdminTraffic = () => {
                     <div className="timer-circle">{timerValues[sig._id] ?? '—'}</div>
                   </div>
                   <button className="btn btn-sm btn-primary" onClick={e => { e.stopPropagation(); openSimulate(sig); }}>
-                    <Play size={12} /> Simulate
+                    <Play size={12} /> Detect
                   </button>
                 </div>
               </div>
@@ -274,18 +277,19 @@ const AdminTraffic = () => {
         </div>
       )}
 
-      {/* Simulate Modal */}
+      {/* Simulate Modal — Real YOLO Detection */}
       {showSimulate && selected && (
         <div className="modal-overlay" onClick={() => setShowSimulate(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 800 }}>
             <div className="modal-header-row">
-              <h2>🤖 Simulate Traffic — {selected.name}</h2>
+              <h2>🤖 YOLO Vehicle Detection — {selected.name}</h2>
               <button className="btn btn-sm btn-outline" onClick={() => setShowSimulate(false)}><X size={14} /></button>
             </div>
 
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-              Upload one traffic image per direction. YOLO will detect vehicles and determine the optimal signal group.
-            </p>
+            <div className="yolo-info-banner">
+              <AlertTriangle size={16} />
+              <span>Upload real traffic images. YOLO will detect & count vehicles (car, motorbike, bus, truck, threewheel, van). <strong>No fake data — only real ML results.</strong></span>
+            </div>
 
             <div className="simulate-uploads">
               {selected.directions.map(dir => (
@@ -303,23 +307,38 @@ const AdminTraffic = () => {
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button className="btn btn-primary" onClick={handleSimulate} disabled={simLoading}>
-                {simLoading ? <><RefreshCw size={14} className="spin-icon" /> Processing...</> : <><Zap size={14} /> Run Simulation</>}
+                {simLoading ? <><RefreshCw size={14} className="spin-icon" /> Detecting Vehicles...</> : <><Zap size={14} /> Run YOLO Detection</>}
               </button>
               <button className="btn btn-outline" onClick={() => setShowSimulate(false)}>Cancel</button>
             </div>
 
-            {/* Results */}
+            {/* Real Detection Results */}
             {simResult && (
               <div className="sim-results" style={{ marginTop: '1.25rem' }}>
-                <h3>📊 Simulation Results</h3>
+                <h3>📊 Real Detection Results</h3>
                 <div className="sim-results-grid">
                   {Object.entries(simResult.directionCounts).map(([dir, counts]) => (
                     <div key={dir} className={`sim-dir-card ${simResult.selectedDirections.includes(dir) ? 'green-signal' : ''}`}>
                       <div className="sim-dir-label">{simResult.selectedDirections.includes(dir) ? '🟢' : '🔴'} {dir}</div>
                       <div className="sim-dir-count">{counts.total}</div>
                       <div className="sim-dir-breakdown">
-                        🚗{counts.car} 🏍️{counts.bike} 🚌{counts.bus} 🚛{counts.truck}
+                        <span title="Car">🚗{counts.car}</span>
+                        <span title="Motorbike">🏍️{counts.motorbike}</span>
+                        <span title="Bus">🚌{counts.bus}</span>
+                        <span title="Truck">🚛{counts.truck}</span>
+                        <span title="Threewheel">🛺{counts.threewheel}</span>
+                        <span title="Van">🚐{counts.van}</span>
                       </div>
+                      {/* Show YOLO annotated image with bounding boxes */}
+                      {simResult.annotatedImages && simResult.annotatedImages[dir] && (
+                        <div className="yolo-annotated-image"
+                          onClick={() => setPreviewImage(simResult.annotatedImages[dir])}>
+                          <img src={simResult.annotatedImages[dir]} alt={`YOLO detection: ${dir}`} />
+                          <div className="yolo-image-overlay">
+                            <Eye size={14} /> View Detection
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -345,6 +364,18 @@ const AdminTraffic = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Full-screen YOLO Image Preview Modal */}
+      {previewImage && (
+        <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={() => setPreviewImage(null)}>
+          <div className="yolo-preview-modal" onClick={e => e.stopPropagation()}>
+            <button className="btn btn-sm btn-outline yolo-preview-close" onClick={() => setPreviewImage(null)}>
+              <X size={16} />
+            </button>
+            <img src={previewImage} alt="YOLO Detection Result" />
           </div>
         </div>
       )}

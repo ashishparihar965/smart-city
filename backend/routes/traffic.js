@@ -211,7 +211,8 @@ router.post('/manual-control', auth, roleCheck('admin'), async (req, res, next) 
 
 /**
  * POST /api/traffic/simulate
- * Simulate traffic: upload images per direction, detect vehicles via YOLO
+ * Real traffic detection: upload images per direction, detect vehicles via YOLO
+ * NO fake data — only real ML detection results
  */
 router.post('/simulate', auth, roleCheck('admin'), upload.any(), async (req, res, next) => {
   try {
@@ -227,7 +228,6 @@ router.post('/simulate', auth, roleCheck('admin'), upload.any(), async (req, res
     }
 
     // Map uploaded files to their directions
-    // Files should be uploaded with field names matching directions, e.g. "N", "S", etc.
     const directionFiles = {};
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
@@ -248,9 +248,10 @@ router.post('/simulate', auth, roleCheck('admin'), upload.any(), async (req, res
       });
     }
 
-    // Call YOLO detection service for each direction
+    // Call YOLO detection service for each direction — REAL detection only
     const ML_SERVER_URL = process.env.ML_TRAFFIC_URL || 'http://localhost:5001';
     const directionCounts = {};
+    const annotatedImages = {};
     let totalCount = 0;
 
     for (const dir of signal.directions) {
@@ -260,30 +261,39 @@ router.post('/simulate', auth, roleCheck('admin'), upload.any(), async (req, res
 
         const response = await axios.post(`${ML_SERVER_URL}/detect`, formData, {
           headers: formData.getHeaders(),
-          timeout: 30000
+          timeout: 30000,
+          maxContentLength: 50 * 1024 * 1024,
+          maxBodyLength: 50 * 1024 * 1024
         });
 
-        const counts = response.data;
+        const data = response.data;
         directionCounts[dir] = {
-          car: counts.car || 0,
-          bike: counts.bike || 0,
-          bus: counts.bus || 0,
-          truck: counts.truck || 0,
-          total: (counts.car || 0) + (counts.bike || 0) + (counts.bus || 0) + (counts.truck || 0)
+          car: data.car || 0,
+          threewheel: data.threewheel || 0,
+          bus: data.bus || 0,
+          truck: data.truck || 0,
+          motorbike: data.motorbike || 0,
+          van: data.van || 0,
+          total: data.total || 0
         };
         totalCount += directionCounts[dir].total;
+
+        // Store annotated image (base64 with bounding boxes)
+        if (data.annotated_image) {
+          annotatedImages[dir] = data.annotated_image;
+        }
+
       } catch (mlErr) {
-        console.error(`YOLO detection failed for direction ${dir}:`, mlErr.message);
-        // Use fallback random data for demo purposes
-        const car = Math.floor(Math.random() * 15);
-        const bike = Math.floor(Math.random() * 10);
-        const bus = Math.floor(Math.random() * 3);
-        const truck = Math.floor(Math.random() * 5);
-        directionCounts[dir] = {
-          car, bike, bus, truck,
-          total: car + bike + bus + truck
-        };
-        totalCount += directionCounts[dir].total;
+        console.error(`❌ YOLO detection failed for direction ${dir}:`, mlErr.message);
+        // NO fake data — return error if ML server is unreachable
+        for (const file of req.files || []) {
+          fs.unlink(file.path, () => {});
+        }
+        return res.status(503).json({
+          success: false,
+          message: `ML Detection Server is not running or unreachable. Failed on direction "${dir}". Please start the ML server (python traffic_detection.py) and try again.`,
+          error: mlErr.message
+        });
       }
     }
 
@@ -300,10 +310,11 @@ router.post('/simulate', auth, roleCheck('admin'), upload.any(), async (req, res
     const signalTime = calculateSignalTime(maxGroupTotal / Math.max(1, signal.groups[maxGroupIdx].length));
     const density = calculateOverallDensity(totalCount, signal.directions.length);
 
-    // Save simulation result
+    // Save simulation result (with annotated images)
     const simulation = await TrafficSimulation.create({
       signalId: signal._id,
       directionCounts,
+      annotatedImages,
       totalCount,
       density,
       activeGroup: maxGroupIdx,
@@ -325,9 +336,9 @@ router.post('/simulate', auth, roleCheck('admin'), upload.any(), async (req, res
     await ActivityLog.create({
       userId: req.user.id,
       userName: req.user.name,
-      action: 'Traffic Simulation',
+      action: 'Traffic Detection (YOLO)',
       module: 'traffic',
-      details: `Simulated signal "${signal.name}": ${totalCount} vehicles detected, Group ${maxGroupIdx} (${signal.groups[maxGroupIdx].join(', ')}) = GREEN, Density: ${density}`
+      details: `Real YOLO detection on "${signal.name}": ${totalCount} vehicles detected, Group ${maxGroupIdx} (${signal.groups[maxGroupIdx].join(', ')}) = GREEN, Density: ${density}`
     });
 
     res.json({
@@ -337,6 +348,7 @@ router.post('/simulate', auth, roleCheck('admin'), upload.any(), async (req, res
         simulation: simulation.toObject(),
         result: {
           directionCounts,
+          annotatedImages,
           groupTotals,
           selectedGroup: maxGroupIdx,
           selectedDirections: signal.groups[maxGroupIdx],

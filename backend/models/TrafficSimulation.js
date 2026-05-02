@@ -10,11 +10,19 @@ const trafficSimulationSchema = new mongoose.Schema({
     type: Map,
     of: {
       car: { type: Number, default: 0 },
-      bike: { type: Number, default: 0 },
+      threewheel: { type: Number, default: 0 },
       bus: { type: Number, default: 0 },
       truck: { type: Number, default: 0 },
+      motorbike: { type: Number, default: 0 },
+      van: { type: Number, default: 0 },
       total: { type: Number, default: 0 }
     },
+    default: {}
+  },
+  // Annotated images (base64) from YOLO detection per direction
+  annotatedImages: {
+    type: Map,
+    of: String,
     default: {}
   },
   totalCount: {

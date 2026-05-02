@@ -565,6 +565,120 @@
   border: 1px solid var(--border-color) !important;
 }
 
+/* YOLO Info Banner */
+.yolo-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-md);
+  color: #f59e0b;
+  font-size: 0.82rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.yolo-info-banner strong {
+  color: #fbbf24;
+}
+
+/* YOLO Annotated Image in Results */
+.yolo-annotated-image {
+  position: relative;
+  margin-top: 0.6rem;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.yolo-annotated-image:hover {
+  border-color: var(--accent-blue);
+  transform: scale(1.02);
+}
+
+.yolo-annotated-image img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.yolo-image-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.5rem 0.5rem 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.yolo-annotated-image:hover .yolo-image-overlay {
+  opacity: 1;
+}
+
+/* Full-screen YOLO Preview Modal */
+.yolo-preview-modal {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+}
+
+.yolo-preview-modal img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  display: block;
+}
+
+.yolo-preview-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+  background: rgba(0,0,0,0.6) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yolo-preview-close:hover {
+  background: rgba(0,0,0,0.85) !important;
+}
+
+/* Vehicle Type Breakdown Spans */
+.sim-dir-breakdown span {
+  display: inline-block;
+  margin: 0.1rem 0.2rem;
+  padding: 0.1rem 0.3rem;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  font-size: 0.68rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .traffic-stats-grid {
